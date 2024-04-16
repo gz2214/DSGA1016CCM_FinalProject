@@ -7,7 +7,7 @@ Created on Thu Apr 11 13:22:22 2024
 
 import numpy as np 
 from random import sample
-
+import pandas as pd
 
 #%%
 pH_set=[.01,.05,.1,.2,.25,.4,.5,.6,.75,.8,.9,.95,.99, 1]
@@ -18,7 +18,7 @@ def LotteryA():
         LA,HA=EVA,EVA
         pHA=1
         LotNumA=1
-        LotShapeA='-'
+        LotShapeA=0
     else:
         pHA=sample(pH_set,1)[0]
         if pHA==1:
@@ -41,12 +41,12 @@ def LotteryA():
             temp=sample(tmp,1)[0]
             LotNumA=abs(temp)
             if temp>0:
-                LotShapeA='R-skew'
+                LotShapeA=2
             else:
-                LotShapeA='L-skew'
+                LotShapeA=3
         else:
             LotNumA=sample([3,5,7,9],1)[0]
-            LotShapeA='Symm'
+            LotShapeA=1
     return([EVA,HA,pHA,LA,LotNumA,LotShapeA])
 #%%
 def LotteryB(EVA):
@@ -75,11 +75,11 @@ def LotteryB(EVA):
         temp=sample(tmp,1)[0]
         LotNumB=abs(temp)
         if temp>0:
-            LotShapeB='R-Skew'
+            LotShapeB=2
         else:
-            LotShapeB='L-Skew'
+            LotShapeB=3
     else:
-        LotShapeB='Symm'
+        LotShapeB=1
         LotNumB=sample([3,5,7,9],1)[0]
         
     return([HB,pHB,LB,LotNumB,LotShapeB])
@@ -102,10 +102,14 @@ def ProblemGeneration():
         noVar=(Corr==1 and any(x=='-' for x in [A[5],B[4]]))
         if (tooBig+tooSmall+identical+B1p+noVar)==0:
             notDone=False
-    return(A[1:]+B+[Corr]+[Amb])
+    return(np.array(A[1:]+B+[Corr]+[Amb]))
 #%%
 n=100
-dataSet=[ProblemGeneration() for i in range(n)]
+dataSet=pd.DataFrame(np.array([ProblemGeneration() for i in range(n)]))
+
+dataSet.columns=['HA','pHA','LA','LotNumA','LotShapeA',
+                 'HB','pHB','LB','LotNumB','LotShapeB',
+                 'Corr','Amb']
 
 
 
