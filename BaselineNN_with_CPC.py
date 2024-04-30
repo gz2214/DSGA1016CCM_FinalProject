@@ -3,11 +3,13 @@ import json
 
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Embedding, Flatten, Dropout
 import pandas as pd 
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from scipy import stats
+
+import torch
 
 from tensorflow.keras.models import Model
 
@@ -211,7 +213,8 @@ def lot_shape_convert(lot_shape):
         'R-skew': [0, 0, 0, 1],
     }[lot_shape]
 
-
+def binary_to_integer(binary_list):
+    return int(''.join(map(str, binary_list)), 2)
 
 def read(input: str):
     """
@@ -234,22 +237,15 @@ def read(input: str):
         
     elif input == 'CPC18':
         data = pd.read_csv("CPC18_EstSet.csv")
-        data = data.drop(columns=['LotShapeA', 'LotShapeB'])
+
+        data['LotShapeA'] = data['LotShapeA'].map(lot_shape_convert)
+        data['LotShapeB'] = data['LotShapeB'].map(lot_shape_convert)
+        data['LotShapeA'] = data['LotShapeA'].apply(binary_to_integer)
+        data['LotShapeB'] = data['LotShapeB'].apply(binary_to_integer)
         
-        # data['LotShapeA'] = data['LotShapeA'].map(lot_shape_convert)
-        # data['LotShapeB'] = data['LotShapeB'].map(lot_shape_convert)
-        # data['LotShapeA'] = data['LotShapeA'].apply(lambda x: np.array(x))
-        # data['LotShapeB'] = data['LotShapeB'].apply(lambda x: np.array(x))
-        # data['LotShapeA'].apply(type)
-        # print(data.head())
+        X = np.array(data.iloc[:, 1:13])
+        Y = np.array(data.iloc[:, 13:])
         
-        X = np.array(data.iloc[:, 1:11])
-        
-        Y = np.array(data.iloc[:, 11:])
-        print("Data types in X:")
-        print(data.iloc[:, 1:13].dtypes)
-        print("\nData types in Y:")
-        print(data.iloc[:, 13:].dtypes)
         model(input, X, Y)
     
 def model(method: str, X, Y):
@@ -271,7 +267,10 @@ def model(method: str, X, Y):
     
     elif method=='CPC18':
         model_cpc = Sequential([
-            Dense(64, activation='relu', input_shape=(10, )), ## 12 values as input, output is 5 predicted values for 
+            Embedding(input_dim=2, output_dim=4, name='lotshape_embedding'),
+            Flatten(),
+            Dense(64, activation='relu', input_shape=(12, )), ## 12 values as input, output is 5 predicted values for 
+            Dropout(0.2),  # Add dropout for regularization
             Dense(64, activation='relu'),
             Dense(5, activation='softmax')
         ])
@@ -283,7 +282,7 @@ def model(method: str, X, Y):
 
         # Train the model
         model_cpc.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=10, batch_size=32, verbose=1)
-                           
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
