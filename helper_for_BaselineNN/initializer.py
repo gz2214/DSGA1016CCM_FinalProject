@@ -1,7 +1,7 @@
 import importlib
 
-from utility_functions import UtilityBase
-from weighting_functions import WeightingBase
+from helper_for_BaselineNN.utility_functions import UtilityBase
+from helper_for_BaselineNN.weighting_functions import WeightingBase
 
 from .loss_functions import mse, crossentropy
 

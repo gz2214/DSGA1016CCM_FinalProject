@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from jax import vmap
 from jax.nn import sigmoid
 
-from utils import glorot_uniform_init, setup_plotting
+from helper_for_BaselineNN.utils import glorot_uniform_init, setup_plotting
 
 
 class WeightingBase(ABC):
