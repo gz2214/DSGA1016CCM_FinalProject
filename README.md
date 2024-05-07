@@ -32,3 +32,31 @@
 |   9   |     0.1744    |      0.0891     |    0s     |   15ms     |
 |  10   |     0.1743    |      0.0891     |    0s     |   14ms     |
 
+## Expected Value
+Validation MSE: 0.2235
+
+## Prospect Theory
+|   Utility Function  | Probability Weight Function  | Training Loss | Validation Loss |
+|---------------------|------------------------------|---------------|-----------------|
+| AsymmetricLinearUtil|            KT_PWF            |     0.0495    |     0.0507      |
+|NormExpLossAverseUtil|            KT_PWF            |     0.0493    |     0.0505      |
+| AsymmetricLinearUtil|ConstantRelativeSensitivityPWF|     0.0492    |     0.0505      |
+|NormExpLossAverseUtil|ConstantRelativeSensitivityPWF|     0.0492    |     0.0506      |
+
+## Prospect Theory with NN as the utility and probability weight functions for 13k
+
+| Epoch | Training Loss | Validation Loss | Time/Step | Total Time |
+|-------|---------------|-----------------|-----------|------------|
+|   1   |     0.0511    |      0.0506     |    5s     |   365ms    |
+|   2   |     0.0487    |      0.0508     |    4s     |   365ms    |
+|   3   |     0.0490    |      0.0506     |    4s     |   365ms    |
+|   4   |     0.0494    |      0.0504     |    5s     |   365ms    |
+|   5   |     0.0495    |      0.0507     |    4s     |   365ms    |
+|   6   |     0.0493    |      0.0505     |    4s     |   365ms    |
+|   7   |     0.0492    |      0.0508     |    4s     |   365ms    |
+|   8   |     0.0486    |      0.0504     |    4s     |   365ms    |
+|   9   |     0.0497    |      0.0505     |    4s     |   365ms    |
+|  10   |     0.0486    |      0.0505     |    4s     |   365ms    |
+
+
+

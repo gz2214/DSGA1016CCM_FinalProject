@@ -6,6 +6,10 @@ from sklearn.base import BaseEstimator
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error
 from scipy.special import softmax
+import tensorflow as tf
+from tensorflow.keras import layers
+from tensorflow.keras.layers import Dense, Input, Concatenate, Softmax
+from tensorflow.keras.models import Model
 
 # Utility Functions
 def AsymmetricLinearUtil(outcome, lambda_al=1.0, alpha_al=1.0):
@@ -38,6 +42,41 @@ def ConstantRelativeSensitivityPWF(p, alpha_crs=0.5, beta_crs=0.5):
     else:
         p_pwf = 1 - (1 - beta_crs) ** (1 - alpha_crs) * (1 - p) ** alpha_crs
     return p_pwf
+
+# NN for util and pw
+def create_model():
+    inputs = tf.keras.Input(shape=(1,))
+    x = layers.Dense(10, activation="relu")(inputs)
+    x = layers.Dense(10, activation="relu")(x)
+    outputs = layers.Dense(1)(x)
+    return Model(inputs, outputs)
+
+def pt_nn_model():
+    nn_util = create_model()
+    nn_pw = create_model()
+    inputs_a_p1 = tf.keras.Input(shape=(1,))
+    inputs_a_oc1 = tf.keras.Input(shape=(1,))
+    inputs_a_p2 = tf.keras.Input(shape=(1,))
+    inputs_a_oc2 = tf.keras.Input(shape=(1,))
+    
+    inputs_b_p1 = tf.keras.Input(shape=(1,))
+    inputs_b_oc1 = tf.keras.Input(shape=(1,))
+    inputs_b_p2 = tf.keras.Input(shape=(1,))
+    inputs_b_oc2 = tf.keras.Input(shape=(1,))
+    
+    sum_option_A = nn_util(inputs_a_oc1, training=True) * nn_pw(inputs_a_p1, training=True) + \
+                           nn_util(inputs_a_oc2, training=True) * nn_pw(inputs_a_p2, training=True)
+    sum_option_B = nn_util(inputs_b_p1, training=True) * nn_pw(inputs_b_oc1, training=True) + \
+                           nn_util(inputs_b_p2, training=True) * nn_pw(inputs_b_oc2, training=True)
+
+    
+    concat = Concatenate(axis=1)([sum_option_A, sum_option_B])
+    pred_y = Softmax(axis=1)(concat)
+    
+    inputs = [inputs_a_p1, inputs_a_oc1, inputs_a_p2, inputs_a_oc2, inputs_b_p1, inputs_b_oc1, inputs_b_p2, inputs_b_oc2]
+    model = Model(inputs, pred_y[:, 1])
+    
+    return model
 
 # PT Model Class
 class ProspectTheoryModel(BaseEstimator):
@@ -118,25 +157,50 @@ def ProspectTheory(param_grid, frac_data=1, util_func='AsymmetricLinearUtil', pw
     
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
-    model = ProspectTheoryModel(util_func=util_func, pwf=pwf)
-    grid_search = GridSearchCV(model, param_grid, cv=3, scoring='neg_mean_squared_error')
-    grid_search.fit(X_train, Y_train)
-    
-    best_model = grid_search.best_estimator_
-    Y_test_pred = best_model.predict(X_test)
-    test_mse = mean_squared_error(Y_test, Y_test_pred)
+    if util_func == "NN" and pwf == "NN":
+        pt_nn = pt_nn_model()
+        pt_nn.compile(optimizer='adam', loss='mse')
 
-    print(f"PT with {util_func} and {pwf}")
-    print("Best parameters:", grid_search.best_params_)
-    print("Best score (MSE):", -grid_search.best_score_)
-    print("Test MSE:", test_mse)  
+        prob_train, prob_test = [np.reshape([i[j, 0] for i in X_train], (-1, 1)) for j in range(4)], \
+                      [np.reshape([i[j, 0] for i in X_test], (-1, 1)) for j in range(4)]
+        outcome_train, outcome_test = [np.reshape([i[j, 1] for i in X_train], (-1, 1)) for j in range(4)], \
+                    [np.reshape([i[j, 1] for i in X_test], (-1, 1)) for j in range(4)]
 
-    return grid_search, test_mse
+        X_train_list=[]
+        for i in range(len(prob_train)):
+            X_train_list.append(prob_train[i])
+            X_train_list.append(outcome_train[i])
+            
+        X_test_list=[]
+        for i in range(len(prob_test)):
+            X_test_list.append(prob_test[i])
+            X_test_list.append(outcome_test[i])
+
+
+        history = pt_nn.fit(X_train_list, Y_train, validation_data=(X_test_list, Y_test), batch_size=32, epochs=10, verbose=1)
+        return history
+
+
+    else:
+        model = ProspectTheoryModel(util_func=util_func, pwf=pwf)
+        grid_search = GridSearchCV(model, param_grid, cv=3, scoring='neg_mean_squared_error')
+        grid_search.fit(X_train, Y_train)
+        
+        best_model = grid_search.best_estimator_
+        Y_test_pred = best_model.predict(X_test)
+        test_mse = mean_squared_error(Y_test, Y_test_pred)
+
+        print(f"PT with {util_func} and {pwf}")
+        print("Best parameters:", grid_search.best_params_)
+        print("Best score (MSE):", -grid_search.best_score_)
+        print("Test MSE:", test_mse)  
+
+        return grid_search, test_mse
 
 if __name__ == "__main__":
     # example run: python pt_model.py --param_grid "{'alpha_kt': [0.3, 0.5, 0.7, 1, 1.2, 1.5],'alpha_al': [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2],'lambda_al': [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2]}"
     parser = argparse.ArgumentParser()
-    parser.add_argument('--param_grid', help='A dictionary of values for hyperparameter tuning, please input the dictionary as a string')
+    parser.add_argument('--param_grid', help='A dictionary of values for hyperparameter tuning, please input the dictionary as a string', default=' ')
     parser.add_argument('--frac_data', help='fraction of the 13k data will be used', default=1)
     parser.add_argument("--util_func",help='A utility function to use', default="AsymmetricLinearUtil")
     parser.add_argument('--weight_func', help='A probability weighting function to use', default="KT_PWF")
@@ -144,6 +208,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Parse the string representation of the dictionary into a dictionary object
-    param_grid = ast.literal_eval(args.param_grid)
+    if args.param_grid == " ":
+        param_grid=" "
+    else:
+        param_grid = ast.literal_eval(args.param_grid)
 
     ProspectTheory(param_grid, args.frac_data, args.util_func, args.weight_func)
