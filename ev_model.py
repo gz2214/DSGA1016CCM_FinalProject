@@ -6,13 +6,18 @@ from sklearn.metrics import mean_squared_error
 from scipy.special import softmax
 
 # EV model
-def ExpectedValue(frac_data=1):
-    data=pd.read_csv("c13k_selections.csv")
+def ExpectedValue(which_data, frac_data=1):
+    if which_data == '13k':
+        data=pd.read_csv("c13k_selections.csv")
+
+    else:
+        data = pd.read_csv("CPC18_EstSet.csv")
+        data["bRate"] = data[['B.1', 'B.2', 'B.3', 'B.4', 'B.5']].mean(axis=1)
+        
     data=data.sample(frac=frac_data, random_state=42)
-    
-    A=[[[data['pHa'][i],data['Ha'][i]],[1-data['pHa'][i],data['La'][i]]] for i in range(14568)]
+    A=[[[data['pHa'][i],data['Ha'][i]],[1-data['pHa'][i],data['La'][i]]] for i in range(60)]
     A =np.array([i for i in A])
-    B=[[[data['pHb'][i],data['Hb'][i]],[1-data['pHb'][i],data['Lb'][i]]] for i in range(14568)]
+    B=[[[data['pHb'][i],data['Hb'][i]],[1-data['pHb'][i],data['Lb'][i]]] for i in range(60)]
     B =np.array([i for i in B])
     X = np.concatenate((A, B), axis=1)
     Y=np.array(data['bRate'])
@@ -28,7 +33,8 @@ def ExpectedValue(frac_data=1):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('--which_data', help='13k or PCP18', default='13k')
     parser.add_argument('--frac_data', help='fraction of the 13k data will be used', default=1)
     args = parser.parse_args()
-    ExpectedValue(args.frac_data)
+    ExpectedValue(args.which_data, args.frac_data)
     

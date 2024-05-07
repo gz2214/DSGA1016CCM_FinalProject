@@ -144,10 +144,15 @@ class ProspectTheoryModel(BaseEstimator):
         return self
     
 
-def ProspectTheory(param_grid, frac_data=1, util_func='AsymmetricLinearUtil', pwf='KT_PWF'):
-    data=pd.read_csv("c13k_selections.csv")
+def ProspectTheory(param_grid, which_data, frac_data=1, util_func='AsymmetricLinearUtil', pwf='KT_PWF'):
+    if which_data == '13k':
+        data=pd.read_csv("c13k _selections.csv")
+
+    else:
+        data = pd.read_csv("CPC18_EstSet.csv")
+        data["bRate"] = data[['B.1', 'B.2', 'B.3', 'B.4', 'B.5']].mean(axis=1)
+
     data=data.sample(frac=frac_data, random_state=42)
-    
     A=[[[data['pHa'][i],data['Ha'][i]],[1-data['pHa'][i],data['La'][i]]] for i in range(14568)]
     A =np.array([i for i in A])
     B=[[[data['pHb'][i],data['Hb'][i]],[1-data['pHb'][i],data['Lb'][i]]] for i in range(14568)]
@@ -201,9 +206,11 @@ if __name__ == "__main__":
     # example run: python pt_model.py --param_grid "{'alpha_kt': [0.3, 0.5, 0.7, 1, 1.2, 1.5],'alpha_al': [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2],'lambda_al': [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2]}"
     parser = argparse.ArgumentParser()
     parser.add_argument('--param_grid', help='A dictionary of values for hyperparameter tuning, please input the dictionary as a string', default=' ')
+    parser.add_argument('--which_data', help='13k or PCP18', default='13k')
     parser.add_argument('--frac_data', help='fraction of the 13k data will be used', default=1)
     parser.add_argument("--util_func",help='A utility function to use', default="AsymmetricLinearUtil")
     parser.add_argument('--weight_func', help='A probability weighting function to use', default="KT_PWF")
+
 
     args = parser.parse_args()
 
@@ -213,4 +220,4 @@ if __name__ == "__main__":
     else:
         param_grid = ast.literal_eval(args.param_grid)
 
-    ProspectTheory(param_grid, args.frac_data, args.util_func, args.weight_func)
+    ProspectTheory(param_grid, args.which_data, args.frac_data, args.util_func, args.weight_func)
