@@ -20,8 +20,8 @@ if __name__ == '__main__':
     ### Section B: Please do not change this section ###
     ####################################################
     # load problems to predict (in this example, the estimation set problems)
-    df = pd.read_csv('c13k_imputed.csv')
-    Data = df.sample(frac=0.01, random_state=32)
+    Data = pd.read_csv('c13k_imputed.csv') 
+    # Data = df.sample(frac=0.01, random_state=32) #comment out and replace df with Data in line above
     print(Data.head())
     # useful variables
     nProblems = Data.shape[0]

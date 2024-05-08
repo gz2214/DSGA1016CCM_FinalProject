@@ -16,8 +16,8 @@ if __name__ == '__main__':
     ### Section B: Please do not change this section ###
     ####################################################
     # load problems to predict (in this example, the estimation set problems)
-    df = pd.read_csv('c13k_imputed.csv')
-    Data = df.sample(frac=0.001, random_state=32) #comment out and replace df with Data in line above
+    Data = pd.read_csv('c13k_imputed.csv')
+    # Data = df.sample(frac=0.001, random_state=32) #comment out and replace df with Data in line above
     train_data = pd.read_csv('TrainData.csv')
     # useful variables
     nProblems = Data.shape[0]
