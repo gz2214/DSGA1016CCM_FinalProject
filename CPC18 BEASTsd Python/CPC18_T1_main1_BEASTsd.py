@@ -54,8 +54,10 @@ if __name__ == '__main__':
     ### Section D: Please do not change this section ###
     ####################################################
     # compute MSE
-    ObservedAll = Data[['B.1', 'B.2', 'B.3', 'B.4', 'B.5']]
-    probMSEs = 100 * ((PredictedAll - ObservedAll) ** 2).mean(axis=1)
+    # ObservedAll = Data[['B.1', 'B.2', 'B.3', 'B.4', 'B.5']]
+    b_rate = PredictedAll.mean(axis=1)
+    ObservedAll = Data['bRate']
+    probMSEs = 100 * ((b_rate - ObservedAll) ** 2).mean(axis=1)
     totalMSE = np.mean(probMSEs)
     print('MSE over the {} problems: {}'.format(nProblems, totalMSE))
     # for keeping the predicted choice rates
